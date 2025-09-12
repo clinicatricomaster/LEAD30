@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Leads - Clínica Premium</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'verde-escuro': 'rgb(1, 52, 37)',
+                        'dourado': '#c5a365',
+                        'texto-principal': '#1F2937',
+                        'texto-secundario': '#6B7281',
+                        'positivo': 'rgb(16, 185, 129)', // green-500
+                        'negativo': 'rgb(239, 68, 68)',   // red-500
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @media print {
+            body * { visibility: hidden !important; }
+            #printContent, #printContent * { visibility: visible !important; }
+            #printContent { display: block !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; }
+            @page { size: A4; margin: 15mm !important; }
+            .print-header { text-align: center !important; margin-bottom: 20px !important; padding-bottom: 10px !important; border-bottom: 1px solid #ddd !important; }
+            .print-header h1 { font-size: 18px !important; font-weight: bold !important; margin: 0 0 8px 0 !important; color: #000 !important; }
+            .print-header p { font-size: 11px !important; margin: 3px 0 !important; color: #333 !important; }
+            .print-table { width: 100% !important; border-collapse: collapse !important; margin-top: 15px !important; font-size: 9pt !important; }
+            .print-table th { background-color: #f4f4f4 !important; padding: 8px 5px !important; text-align: left !important; font-weight: bold !important; border-bottom: 2px solid #333 !important; color: #000 !important; -webkit-print-color-adjust: exact; }
+            .print-table td { padding: 6px 5px !important; text-align: left !important; font-size: 8pt !important; border-bottom: 1px solid #ccc !important; }
+            .print-table tr:nth-child(even) { background-color: #f9f9f9 !important; -webkit-print-color-adjust: exact; }
+            .no-print { display: none !important; }
+        }
+        
+        #printContent { display: none; }
+        .modal { transition: opacity 0.3s ease; }
+        .modal .modal-content { transition: transform 0.3s ease; }
+        .nav-link.active {
+            background-color: #c5a365;
+            color: rgb(1, 52, 37);
+            font-weight: 600;
+        }
+        .table-input {
+            padding: 0.3rem 0.5rem; border: 1px solid #D1D5DB; border-radius: 0.375rem; width: 100%;
+            font-size: 0.875rem; line-height: 1.25rem; background-color: #F9FAFB;
+        }
+        .table-input:focus {
+            outline: 2px solid transparent; outline-offset: 2px; border-color: #c5a365;
+            box-shadow: 0 0 0 1px #c5a365; background-color: #fff;
+        }
+    </style>
+</head>
+<body class="bg-[#F3F4F6] font-sans">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-80 z-[100] flex items-center justify-center">
+        <div class="text-center">
+            <h2 class="text-2xl font-bold text-verde-escuro">Clínica Premium</h2>
+            <p class="mt-2 text-texto-principal">Carregando dados, por favor aguarde...</p>
+        </div>
+    </div>
+
+    <div id="app-content" class="hidden">
+        <div class="flex">
+            <aside class="fixed top-0 left-0 h-screen w-64 bg-verde-escuro text-white flex flex-col no-print">
+                <div class="px-6 py-4 flex items-center justify-center border-b border-white/10">
+                    <h1 class="text-2xl font-bold text-white">Clínica</h1>
+                </div>
+                <nav id="main-nav" class="flex-1 mt-6 px-4 space-y-2">
+                    <a href="#" onclick="showView('view-dashboard', this)" class="nav-link flex items-center gap-3 px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                        <span>Dashboard</span>
+                    </a>
+                        <a href="#" onclick="showView('view-leads', this)" class="nav-link flex items-center gap-3 px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <span>Controle de Leads</span>
+                    </a>
+                    <a href="#" onclick="showView('view-agendamentos', this)" class="nav-link flex items-center gap-3 px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-colors">
+                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                        <span>Agendamentos</span>
+                    </a>
+                    <div>
+                        <button onclick="toggleSubmenu('submenuCadastros')" class="w-full flex items-center justify-between gap-3 px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-colors">
+                            <div class="flex items-center gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                                <span>Cadastros</span>
+                            </div>
+                            <svg id="arrowCadastros" class="w-4 h-4 transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div id="submenuCadastros" class="hidden mt-2 space-y-2 pl-8">
+                            <a href="#" onclick="abrirModalNovoLead()" class="block px-4 py-2 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white">Novo Lead</a>
+                            <a href="#" onclick="abrirModalMensagens()" class="block px-4 py-2 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white">Mensagens</a>
+                            <a href="#" onclick="abrirModalMedicos()" class="block px-4 py-2 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white">Médicos</a>
+                            
+                            <div class="border-t border-white/10 my-2"></div>
+                            <a href="#" onclick="backupDadosJSON()" class="block px-4 py-2 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white">Backup (JSON)</a>
+                            <a href="#" onclick="document.getElementById('restaurarInput').click()" class="block px-4 py-2 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white">Restaurar (JSON)</a>
+                        </div>
+                    </div>
+                    <a href="#" onclick="abrirRelatorio()" class="flex items-center gap-3 px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-colors">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                        <span>Relatórios</span>
+                    </a>
+                </nav>
+                <div class="px-4 py-4 border-t border-white/10 mt-auto">
+                    <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        <span>Sair</span>
+                    </a>
+                </div>
+            </aside>
+            <div class="ml-64 w-full flex-1">
+                <header class="bg-verde-escuro p-4 shadow-md no-print sticky top-0 z-10">
+                    <h2 id="header-title" class="text-xl font-semibold text-white">Dashboard</h2>
+                </header>
+
+                <main class="p-6 space-y-6">
+                    <div id="view-dashboard" class="main-view space-y-6">
+                        <div class="bg-white rounded-lg shadow p-6 no-print">
+                            <div class="flex flex-wrap items-center justify-between gap-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex items-center gap-2">
+                                        <label for="dataInicioDashboard" class="text-sm font-medium text-texto-secundario">De:</label>
+                                        <input type="date" id="dataInicioDashboard" class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado w-40" onchange="atualizarDashboard()">
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <label for="dataFimDashboard" class="text-sm font-medium text-texto-secundario">Até:</label>
+                                        <input type="date" id="dataFimDashboard" class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado w-40" onchange="atualizarDashboard()">
+                                    </div>
+                                     <button onclick="limparFiltrosDashboard()" class="bg-gray-200 text-texto-principal font-medium py-2 px-4 rounded-md hover:bg-gray-300 transition-colors text-sm">Limpar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 no-print">
+                            <div class="rounded-lg shadow p-4 bg-emerald-100"><div class="text-left"><p class="text-sm font-medium text-emerald-800">Total Período</p><p class="text-3xl font-bold text-emerald-900 mt-1" id="totalMes">0</p><div class="text-xs text-emerald-700 grid grid-cols-2 gap-x-4 gap-y-1 mt-3"><div>1ª sem: <b id="totalSem1" class="text-emerald-900">0</b></div><div>2ª sem: <b id="totalSem2" class="text-emerald-900">0</b></div><div>3ª sem: <b id="totalSem3" class="text-emerald-900">0</b></div><div>4ª sem: <b id="totalSem4" class="text-emerald-900">0</b></div><div>5ª sem: <b id="totalSem5" class="text-emerald-900">0</b></div></div></div></div>
+                            <div class="rounded-lg shadow p-4 bg-rose-100"><div class="text-left"><p class="text-sm font-medium text-rose-800">Google Ads</p><p class="text-3xl font-bold text-rose-900 mt-1" id="totalGoogleAds">0</p><div class="text-xs text-rose-700 grid grid-cols-2 gap-x-4 gap-y-1 mt-3"><div>1ª sem: <b id="googleadsSem1" class="text-rose-900">0</b></div><div>2ª sem: <b id="googleadsSem2" class="text-rose-900">0</b></div><div>3ª sem: <b id="googleadsSem3" class="text-rose-900">0</b></div><div>4ª sem: <b id="googleadsSem4" class="text-rose-900">0</b></div><div>5ª sem: <b id="googleadsSem5" class="text-rose-900">0</b></div></div></div></div>
+                            <div class="rounded-lg shadow p-4 bg-fuchsia-100"><div class="text-left"><p class="text-sm font-medium text-fuchsia-800">Instagram</p><p class="text-3xl font-bold text-fuchsia-900 mt-1" id="totalInstagram">0</p><div class="text-xs text-fuchsia-700 grid grid-cols-2 gap-x-4 gap-y-1 mt-3"><div>1ª sem: <b id="instagramSem1" class="text-fuchsia-900">0</b></div><div>2ª sem: <b id="instagramSem2" class="text-fuchsia-900">0</b></div><div>3ª sem: <b id="instagramSem3" class="text-fuchsia-900">0</b></div><div>4ª sem: <b id="instagramSem4" class="text-fuchsia-900">0</b></div><div>5ª sem: <b id="instagramSem5" class="text-fuchsia-900">0</b></div></div></div></div>
+                            <div class="rounded-lg shadow p-4 bg-sky-100"><div class="text-left"><p class="text-sm font-medium text-sky-800">Indicação</p><p class="text-3xl font-bold text-sky-900 mt-1" id="totalIndicacao">0</p><div class="text-xs text-sky-700 grid grid-cols-2 gap-x-4 gap-y-1 mt-3"><div>1ª sem: <b id="indicacaoSem1" class="text-sky-900">0</b></div><div>2ª sem: <b id="indicacaoSem2" class="text-sky-900">0</b></div><div>3ª sem: <b id="indicacaoSem3" class="text-sky-900">0</b></div><div>4ª sem: <b id="indicacaoSem4" class="text-sky-900">0</b></div><div>5ª sem: <b id="indicacaoSem5" class="text-sky-900">0</b></div></div></div></div>
+                            <div class="rounded-lg shadow p-4 bg-amber-100"><div class="text-left"><p class="text-sm font-medium text-amber-800">Outros</p><p class="text-3xl font-bold text-amber-900 mt-1" id="totalOutros">0</p><div class="text-xs text-amber-700 grid grid-cols-2 gap-x-4 gap-y-1 mt-3"><div>1ª sem: <b id="outrosSem1" class="text-amber-900">0</b></div><div>2ª sem: <b id="outrosSem2" class="text-amber-900">0</b></div><div>3ª sem: <b id="outrosSem3" class="text-amber-900">0</b></div><div>4ª sem: <b id="outrosSem4" class="text-amber-900">0</b></div><div>5ª sem: <b id="outrosSem5" class="text-amber-900">0</b></div></div></div></div>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 no-print">
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-bold text-texto-principal mb-4">Resumo por Origem</h3>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-texto-secundario uppercase">Origem</th>
+                                                <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Leads</th>
+                                                <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">% Total</th>
+                                                <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Agend.</th>
+                                                <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Taxa Agend.</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="originSummaryBody" class="divide-y divide-gray-200"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-bold text-texto-principal mb-4">Resumo por Unidade</h3>
+                                 <div class="overflow-x-auto">
+                                    <table class="min-w-full">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-texto-secundario uppercase">Unidade</th>
+                                                <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Agend.</th>
+                                                <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Comp.</th>
+                                                <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Taxa Comp.</th>
+                                                <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Protoc.</th>
+                                                <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Taxa Protoc.</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="unitSummaryBody" class="divide-y divide-gray-200"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6 no-print">
+                            <h3 class="text-lg font-bold text-texto-principal mb-4">Comparativo de Períodos</h3>
+                            <p class="text-sm text-texto-secundario mb-2">Período Atual: <b id="currentPeriodLabel"></b></p>
+                            <p class="text-sm text-texto-secundario mb-4">Período Anterior: <b id="previousPeriodLabel"></b></p>
+                            <div class="overflow-x-auto mb-6">
+                                <table class="min-w-full">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-texto-secundario uppercase">Métrica</th>
+                                            <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Período Anterior</th>
+                                            <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Período Atual</th>
+                                            <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Variação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="comparisonSummaryBody" class="divide-y divide-gray-200"></tbody>
+                                </table>
+                            </div>
+                            <h3 class="text-md font-bold text-texto-principal mt-6 mb-4">Protocolos por Médico</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-texto-secundario uppercase">Médico</th>
+                                            <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Agend. (Ant.)</th>
+                                            <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Protoc. (Ant.)</th>
+                                            <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Agend. (Atual)</th>
+                                            <th class="px-4 py-2 text-center text-xs font-medium text-texto-secundario uppercase">Protoc. (Atual)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="doctorComparisonBody" class="divide-y divide-gray-200"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="view-leads" class="main-view hidden space-y-6">
+                        <div class="bg-white rounded-lg shadow p-6 no-print">
+                            <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                                <h2 class="text-xl font-bold text-texto-principal">Agenda da Semana</h2>
+                                <div class="flex items-center gap-2">
+                                    <label for="semana-filtro" class="text-sm font-medium text-texto-secundario">Selecionar Semana:</label>
+                                    <input type="date" id="semana-filtro" class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado w-40" onchange="renderizarAgendaSemanal()">
+                                </div>
+                            </div>
+                            <div id="agenda-semanal-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4"></div>
+                        </div>
+
+                         <div class="bg-white rounded-lg shadow p-6 no-print">
+                            <h2 class="text-xl font-bold text-texto-principal mb-4">Todos os Leads</h2>
+                            <div class="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                    <div>
+                                        <label for="filtroDataInicioLeads" class="block text-sm font-medium mb-1 text-texto-secundario">De:</label>
+                                        <input type="date" id="filtroDataInicioLeads" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado">
+                                    </div>
+                                    <div>
+                                        <label for="filtroDataFimLeads" class="block text-sm font-medium mb-1 text-texto-secundario">Até:</label>
+                                        <input type="date" id="filtroDataFimLeads" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado">
+                                    </div>
+                                    <div>
+                                        <label for="filtroStatusLeads" class="block text-sm font-medium mb-1 text-texto-secundario">Status:</label>
+                                        <select id="filtroStatusLeads" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado">
+                                            <option value="">Todos</option>
+                                            <option value="aberto">Aberto</option>
+                                            <option value="ativado">Ativado</option>
+                                            <option value="sim">Agendado</option>
+                                            <option value="nao">Não Agendou</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button onclick="aplicarFiltrosLeads()" class="w-full bg-dourado text-white font-medium py-2 px-4 rounded-md hover:opacity-90 transition-colors">🔍 Filtrar</button>
+                                        <button onclick="limparFiltrosLeads()" class="w-full bg-gray-200 text-texto-principal font-medium py-2 px-4 rounded-md hover:bg-gray-300 transition-colors">🗑️ Limpar</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Data</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Nome</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Origem</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Mensagem</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Status</th>
+                                            <th class="px-4 py-3 text-center text-xs font-medium text-texto-secundario uppercase tracking-wider">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="leadsTableBody" class="bg-white divide-y divide-gray-200 text-sm text-texto-principal"></tbody>
+                                </table>
+                            </div>
+                            <div id="leadsPaginacao" class="mt-4 flex justify-center items-center gap-2"></div>
+                        </div>
+                    </div>
+
+                    <div id="view-agendamentos" class="main-view hidden">
+                        <div class="bg-white rounded-lg shadow p-6 no-print">
+                            <h2 class="text-xl font-bold text-texto-principal mb-4">Controle de Agendamentos</h2>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full table-fixed">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="w-1/4 px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Nome</th>
+                                            <th class="w-40 px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Data Agend.</th>
+                                            <th class="w-1/5 px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Médico</th>
+                                            <th class="w-1/6 px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Unidade</th>
+                                            <th class="w-1/6 px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Compareceu</th>
+                                            <th class="w-32 px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Protocolo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="agendamentosTableBody" class="bg-white divide-y divide-gray-200 text-sm text-texto-principal"></tbody>
+                                </table>
+                            </div>
+                             <div id="agendamentosPaginacao" class="mt-4 flex justify-center items-center gap-2"></div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <div id="modalNovoLead" class="modal fixed inset-0 bg-black bg-opacity-60 hidden z-50 no-print"><div class="flex items-center justify-center min-h-screen p-4"><div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-4xl"><div class="p-6"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-texto-principal">Cadastrar Novo Lead</h2><button onclick="fecharModalNovoLead()" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button></div><form id="leadForm" class="space-y-4"><div class="grid grid-cols-1 md:grid-cols-12 gap-4"><div class="md:col-span-3"><label for="data" class="block text-sm font-medium mb-1 text-texto-secundario">Data</label><input type="date" id="data" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado" required></div><div class="md:col-span-5"><label for="nome" class="block text-sm font-medium mb-1 text-texto-secundario">Nome</label><input type="text" id="nome" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado" required></div><div class="md:col-span-4"><label for="telefone" class="block text-sm font-medium mb-1 text-texto-secundario">Telefone (11 dígitos)</label><input type="tel" id="telefone" placeholder="11988887777" maxlength="11" oninput="this.value = this.value.replace(/\D/g, '')" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado" required></div></div><div class="grid grid-cols-1 md:grid-cols-12 gap-4"><div class="md:col-span-4"><label for="origem" class="block text-sm font-medium mb-1 text-texto-secundario">Origem</label><select id="origem" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado" required><option value="">Selecione</option><option value="Google Ads">Google Ads</option><option value="Instagram">Instagram</option><option value="Indicação">Indicação</option><option value="Outros">Outros</option></select></div><div class="md:col-span-5"><label for="mensagem" class="block text-sm font-medium mb-1 text-texto-secundario">Mensagem</label><select id="mensagem" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado"><option value="">Selecione</option></select></div><div class="md:col-span-3"><label for="agendou" class="block text-sm font-medium mb-1 text-texto-secundario">Status</label><select id="agendou" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado" onchange="toggleAgendamentoFields()"><option value="aberto">Aberto</option><option value="ativado">Ativado</option><option value="nao">Não Agendou</option><option value="sim">Agendado</option></select></div></div><div id="agendamentoFields" class="hidden grid grid-cols-1 md:grid-cols-12 gap-4 pt-4 border-t mt-4"><div class="md:col-span-4"><label for="dataAgendamento" class="block text-sm font-medium mb-1 text-texto-secundario">Data Agendamento <span class="text-red-500">*</span></label><input type="date" id="dataAgendamento" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado"></div><div class="md:col-span-4"><label for="unidade" class="block text-sm font-medium mb-1 text-texto-secundario">Unidade <span class="text-red-500">*</span></label><select id="unidade" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado"><option value="">Selecione</option><option value="Tatuapé">Tatuapé</option><option value="Santana">Santana</option></select></div><div class="md:col-span-4"><label for="medico" class="block text-sm font-medium mb-1 text-texto-secundario">Médico <span class="text-red-500">*</span></label><select id="medico" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado"><option value="">Selecione</option></select></div></div><div class="flex gap-3 pt-4"><button type="button" id="btnSalvarLead" class="bg-dourado hover:opacity-90 text-white font-semibold py-2 px-6 rounded-md transition-colors">Cadastrar Lead</button></div></form></div></div></div></div>
+        <div id="modalRelatorio" class="modal fixed inset-0 bg-black bg-opacity-60 hidden z-50 no-print"><div class="flex items-center justify-center min-h-screen p-4"><div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-screen overflow-y-auto"><div class="p-6"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-texto-principal">Relatório de Leads</h2><button onclick="fecharRelatorio()" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button></div><div class="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200"><h3 class="text-lg font-semibold mb-4 text-texto-principal">Filtros</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-4"><div><label class="block text-sm font-medium mb-1 text-texto-secundario">Nome</label><input type="text" id="filtroNomeRelatorio" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado"></div><div><label class="block text-sm font-medium mb-1 text-texto-secundario">Telefone</label><input type="text" id="filtroTelefoneRelatorio" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado"></div><div><label class="block text-sm font-medium mb-1 text-texto-secundario">Data Inicial</label><input type="date" id="dataInicialRelatorio" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado"></div><div><label class="block text-sm font-medium mb-1 text-texto-secundario">Data Final</label><input type="date" id="dataFinalRelatorio" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado"></div><div><label class="block text-sm font-medium mb-1 text-texto-secundario">Unidade</label><select id="filtroUnidadeRelatorio" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado"><option value="">Todas</option><option value="Tatuapé">Tatuapé</option><option value="Santana">Santana</option></select></div><div><label class="block text-sm font-medium mb-1 text-texto-secundario">Origem</label><select id="filtroOrigemRelatorio" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado"><option value="">Todas</option><option value="Google Ads">Google Ads</option><option value="Instagram">Instagram</option><option value="Indicação">Indicação</option><option value="Outros">Outros</option></select></div><div><label class="block text-sm font-medium mb-1 text-texto-secundario">Status</label><select id="filtroAgendouRelatorio" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado"><option value="">Todos</option><option value="sim">Agendado</option><option value="nao">Não Agendou</option><option value="aberto">Aberto</option><option value="ativado">Ativado</option></select></div></div><div class="flex flex-wrap gap-3"><button onclick="filtrarRelatorio()" class="bg-dourado text-white font-medium py-2 px-4 rounded-md hover:opacity-90 transition-colors">🔍 Filtrar</button><button onclick="limparFiltrosRelatorio()" class="bg-gray-200 text-texto-principal font-medium py-2 px-4 rounded-md hover:bg-gray-300 transition-colors">🗑️ Limpar</button><button onclick="exportarExcel()" class="bg-green-700 text-white font-medium py-2 px-4 rounded-md hover:bg-green-800 transition-colors">📊 Exportar Excel</button><button onclick="imprimirRelatorio()" class="bg-gray-600 text-white font-medium py-2 px-4 rounded-md hover:bg-gray-700 transition-colors">🖨️ Imprimir</button></div></div><div class="overflow-x-auto"><p class="mb-4 text-sm text-texto-secundario">Total de leads: <b id="totalLeadsRelatorio" class="text-texto-principal">0</b></p><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Data</th><th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Nome</th><th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Telefone</th><th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Unidade</th><th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Médico</th><th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Origem</th><th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Status</th><th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider">Data Agend.</th><th class="px-4 py-3 text-left text-xs font-medium text-texto-secundario uppercase tracking-wider no-print">Ações</th></tr></thead><tbody id="relatorioTableBody" class="bg-white divide-y divide-gray-200 text-sm text-texto-principal"></tbody></table><div id="relatorioPaginacao" class="mt-4 flex justify-center items-center gap-2"></div></div></div></div></div></div>
+        <div id="modalMedicos" class="modal fixed inset-0 bg-black bg-opacity-60 hidden z-[60]"><div class="flex items-center justify-center min-h-screen p-4"><div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg"><div class="p-6"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-texto-principal">Cadastro de Médicos</h2><button onclick="fecharModalMedicos()" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button></div><div class="mb-4"><label for="novoMedicoNome" class="block text-sm font-medium mb-1 text-texto-secundario">Nome do Médico</label><div class="flex gap-2"><input type="text" id="novoMedicoNome" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado"><button type="button" id="btnSalvarMedico" class="bg-dourado text-white font-medium py-2 px-4 rounded-md hover:opacity-90">Adicionar</button></div></div><div class="max-h-64 overflow-y-auto"><table class="w-full"><tbody id="listaMedicosBody" class="divide-y"></tbody></table></div></div></div></div></div>
+        <div id="modalMensagens" class="modal fixed inset-0 bg-black bg-opacity-60 hidden z-[60]"><div class="flex items-center justify-center min-h-screen p-4"><div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg"><div class="p-6"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-texto-principal">Cadastro de Mensagens</h2><button onclick="fecharModalMensagens()" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button></div><div class="mb-4"><label for="novaMensagemTexto" class="block text-sm font-medium mb-1 text-texto-secundario">Texto da Mensagem</label><div class="flex gap-2"><input type="text" id="novaMensagemTexto" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-dourado focus:border-dourado"><button type="button" id="btnSalvarMensagem" class="bg-dourado text-white font-medium py-2 px-4 rounded-md hover:opacity-90">Adicionar</button></div></div><div class="max-h-64 overflow-y-auto"><table class="w-full"><tbody id="listaMensagensBody" class="divide-y"></tbody></table></div></div></div></div></div>
+        <div id="printContent"></div>
+    </div>
+    
+    <input type="file" id="restaurarInput" onchange="restaurarDadosJSON(event)" accept=".json" class="hidden">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script>
+  const firebaseConfig = {
+  apiKey: "AIzaSyBRIOWfARWOhRL11ptT01VFmljiZZepvMA",
+  authDomain: "lead-trm-381e8.firebaseapp.com",
+  projectId: "lead-trm-381e8",
+  storageBucket: "lead-trm-381e8.firebasestorage.app",
+  messagingSenderId: "183447565971",
+  appId: "1:183447565971:web:9f367407dc48a360657f66"
+};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+(function(window) {
+    // Variáveis de estado
+    let leads = [], mensagensPadrao = [], medicos = [], leadsFiltrados = [], leadsRelatorio = [];
+    let leadsCurrentPage = 1, agendamentosCurrentPage = 1, relatorioCurrentPage = 1; 
+    const ITEMS_PER_PAGE = 10;
+    
+    // Funções Utilitárias
+    const capitalizarNome = (nome) => nome ? nome.toLowerCase().replace(/(^|\s)\S/g, l => l.toUpperCase()) : '';
+    const formatarData = (data) => data ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
+    const formatarDataInput = (date) => date.toISOString().split('T')[0];
+    const getWeekOfMonth = (dateString) => {
+        if (!dateString) return 0;
+        const date = new Date(dateString + 'T12:00:00');
+        return Math.ceil(date.getDate() / 7);
+    };
+
+    // Carregamento de Dados
+    const carregarDadosIniciais = async () => {
+        try {
+            const [leadsSnapshot, medicosSnapshot, mensagensSnapshot] = await Promise.all([
+                db.collection('leads').get(),
+                db.collection('medicos').orderBy('nome').get(),
+                db.collection('mensagensPadrao').orderBy('texto').get()
+            ]);
+            leads = leadsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            medicos = medicosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            mensagensPadrao = mensagensSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error("ERRO FATAL AO CARREGAR DADOS:", error);
+            alert("Não foi possível carregar os dados. Verifique sua configuração do Firebase e as regras de segurança (Firestore Rules). Pressione F12 para ver o erro no console.");
+        }
+    };
+
+    // --- LÓGICA DE CADASTRO CORRIGIDA ---
+
+    const adicionarLead = () => { // Função não precisa ser async aqui
+        const form = document.getElementById('leadForm');
+        const nomeNovo = capitalizarNome(form.nome.value).trim(), telefoneNovo = form.telefone.value, status = form.agendou.value, agendado = status === 'sim';
+        
+        if (leads.some(l => l.nome.toLowerCase() === nomeNovo.toLowerCase() || l.telefone === telefoneNovo)) return alert('Erro: Já existe um lead com este nome ou telefone.');
+        if (telefoneNovo.length !== 11) return alert('O telefone deve conter 11 dígitos (DDD + número).');
+        if (agendado && (!form.dataAgendamento.value || !form.unidade.value || !form.medico.value)) return alert('Para status "Agendado", todos os campos de agendamento são obrigatórios.');
+        
+        const novoLead = { data: form.data.value, nome: nomeNovo, telefone: telefoneNovo, origem: form.origem.value, mensagem: form.mensagem.value, agendou: status, dataAgendamento: agendado ? form.dataAgendamento.value : null, unidade: agendado ? form.unidade.value : null, medico: agendado ? form.medico.value : null, compareceu: agendado ? 'Pendente' : null, protocolo: false };
+        
+        db.collection('leads').add(novoLead)
+            .then(docRef => {
+                leads.unshift({ id: docRef.id, ...novoLead });
+                fecharModalNovoLead();
+                showView('view-leads', document.querySelector('[onclick*="view-leads"]'));
+            })
+            .catch(error => {
+                console.error("ERRO AO ADICIONAR LEAD:", error);
+                alert("Falha ao salvar o novo lead. Verifique se sua configuração do Firebase está correta e se as 'Regras de Segurança' (Firestore Rules) permitem a escrita de dados. Pressione F12 para detalhes.");
+            });
+    };
+    
+    const adicionarMedico = () => { // Função não precisa ser async aqui
+        const input = document.getElementById('novoMedicoNome'), nome = capitalizarNome(input.value.trim());
+        if (nome) {
+            db.collection('medicos').add({ nome })
+                .then(docRef => {
+                    medicos.push({ id: docRef.id, nome });
+                    medicos.sort((a,b) => a.nome.localeCompare(b.nome));
+                    renderizarMedicos(); popularSelectMedicos(); input.value = '';
+                })
+                .catch(error => {
+                    console.error("ERRO AO ADICIONAR MÉDICO:", error);
+                    alert("Falha ao salvar médico. Verifique as 'Regras de Segurança' (Firestore Rules) do seu banco de dados. Pressione F12 para detalhes.");
+                });
+        }
+    };
+    
+    const adicionarMensagem = () => { // Função não precisa ser async aqui
+        const input = document.getElementById('novaMensagemTexto'), texto = input.value.trim();
+        if (texto) {
+            db.collection('mensagensPadrao').add({ texto })
+                .then(docRef => {
+                    mensagensPadrao.push({ id: docRef.id, texto });
+                    mensagensPadrao.sort((a,b) => a.texto.localeCompare(b.texto));
+                    renderizarMensagens(); atualizarSelectMensagens(); input.value = '';
+                })
+                .catch(error => {
+                    console.error("ERRO AO ADICIONAR MENSAGEM:", error);
+                    alert("Falha ao salvar mensagem. Verifique as 'Regras de Segurança' (Firestore Rules) do seu banco de dados. Pressione F12 para detalhes.");
+                });
+        }
+    };
+
+    // --- RESTANTE DO CÓDIGO (sem alterações) ---
+    const toggleModal = (modalId, show) => {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        const modalContent = modal.querySelector('.modal-content');
+        if (show) {
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.style.opacity = '1'; if (modalContent) modalContent.style.transform = 'scale(1)'; }, 10);
+        } else {
+            modal.style.opacity = '0';
+            if (modalContent) modalContent.style.transform = 'scale(0.95)';
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+    };
+    const toggleSubmenu = (submenuId) => {
+        document.getElementById(submenuId)?.classList.toggle('hidden');
+        document.getElementById('arrow' + submenuId.replace('submenu', ''))?.classList.toggle('rotate-180');
+    };
+    const showView = (viewId, clickedLink) => {
+        document.querySelectorAll('.main-view').forEach(view => view.classList.add('hidden'));
+        document.getElementById(viewId)?.classList.remove('hidden');
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        clickedLink?.classList.add('active');
+        const titles = {'view-dashboard': 'Dashboard', 'view-leads': 'Controle de Leads', 'view-agendamentos': 'Controle de Agendamentos'};
+        document.getElementById('header-title').textContent = titles[viewId] || 'Dashboard';
+        if (viewId === 'view-dashboard') atualizarDashboard();
+        if (viewId === 'view-leads') {
+            document.getElementById('semana-filtro').value = formatarDataInput(new Date());
+            renderizarAgendaSemanal();
+            limparFiltrosLeads();
+        }
+        if (viewId === 'view-agendamentos') renderizarAgendamentos();
+    };
+    const renderizarPaginacao = (containerId, currentPage, totalItems, onPageChangeFuncName) => { 
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        if (totalPages <= 1) return;
+        let html = `<button class="px-3 py-1 text-sm rounded-md ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300'}" ${currentPage === 1 ? 'disabled' : ''} onclick="window.${onPageChangeFuncName}(${currentPage - 1})">Anterior</button>`;
+        for (let i = 1; i <= totalPages; i++) {
+            html += `<button class="px-3 py-1 text-sm rounded-md ${i === currentPage ? 'bg-dourado text-white' : 'bg-gray-200 hover:bg-gray-300'}" onclick="window.${onPageChangeFuncName}(${i})">${i}</button>`;
+        }
+        html += `<button class="px-3 py-1 text-sm rounded-md ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300'}" ${currentPage === totalPages ? 'disabled' : ''} onclick="window.${onPageChangeFuncName}(${currentPage + 1})">Próximo</button>`;
+        container.innerHTML = html;
+    };
+    const changeLeadsPage = (page) => { leadsCurrentPage = page; renderizarLeads(); };
+    const changeAgendamentosPage = (page) => { agendamentosCurrentPage = page; renderizarAgendamentos(); };
+    const changeRelatorioPage = (page) => { relatorioCurrentPage = page; renderizarRelatorio(leadsRelatorio); };
+    const renderizarLeads = () => {
+        const tableBody = document.getElementById('leadsTableBody');
+        const sortedLeads = [...leadsFiltrados].sort((a, b) => new Date(b.data) - new Date(a.data));
+        const paginatedLeads = sortedLeads.slice((leadsCurrentPage - 1) * ITEMS_PER_PAGE, sortedLeads.length === 0 ? 0 : leadsCurrentPage * ITEMS_PER_PAGE);
+        tableBody.innerHTML = paginatedLeads.map(lead => {
+            const shortMessage = lead.mensagem && lead.mensagem.length > 25 ? lead.mensagem.substring(0, 25) + '...' : (lead.mensagem || '-');
+            return `<tr><td class="p-3">${formatarData(lead.data)}</td><td class="p-3 font-medium">${lead.nome}</td><td class="p-3">${lead.origem}</td><td class="p-3" title="${lead.mensagem || ''}">${shortMessage}</td><td class="p-3 w-40"><select onchange="atualizarStatusLead('${lead.id}', this.value)" class="table-input"><option value="aberto" ${lead.agendou === 'aberto' ? 'selected' : ''}>Aberto</option><option value="ativado" ${lead.agendou === 'ativado' ? 'selected' : ''}>Ativado</option><option value="sim" ${lead.agendou === 'sim' ? 'selected' : ''}>Agendado</option><option value="nao" ${lead.agendou === 'nao' ? 'selected' : ''}>Não Agendou</option></select></td><td class="p-3 text-center w-24"><button onclick="excluirLead('${lead.id}')" class="text-red-500 hover:text-red-700 font-medium text-sm">Excluir</button></td></tr>`;
+        }).join('');
+        if(paginatedLeads.length === 0) tableBody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-texto-secundario">Nenhum lead encontrado para os filtros selecionados.</td></tr>`;
+        renderizarPaginacao('leadsPaginacao', leadsCurrentPage, sortedLeads.length, 'changeLeadsPage');
+    };
+    const aplicarFiltrosLeads = () => {
+        const dataInicio = document.getElementById('filtroDataInicioLeads').value;
+        const dataFim = document.getElementById('filtroDataFimLeads').value;
+        const status = document.getElementById('filtroStatusLeads').value;
+        leadsFiltrados = leads.filter(lead => ((!dataInicio || lead.data >= dataInicio) && (!dataFim || lead.data <= dataFim)) && (!status || lead.agendou === status));
+        leadsCurrentPage = 1;
+        renderizarLeads();
+    };
+    const limparFiltrosLeads = () => {
+        const hoje = new Date(), diaDaSemana = hoje.getDay(), inicioSemana = new Date(hoje);
+        inicioSemana.setDate(hoje.getDate() - diaDaSemana + (diaDaSemana === 0 ? -6 : 1));
+        const fimSemana = new Date(inicioSemana);
+        fimSemana.setDate(inicioSemana.getDate() + 6);
+        document.getElementById('filtroDataInicioLeads').value = formatarDataInput(inicioSemana);
+        document.getElementById('filtroDataFimLeads').value = formatarDataInput(fimSemana);
+        document.getElementById('filtroStatusLeads').value = '';
+        aplicarFiltrosLeads();
+    };
+    const atualizarStatusLead = async (leadId, novoStatus) => {
+        const leadIndex = leads.findIndex(l => l.id === leadId);
+        if (leadIndex > -1) {
+            try {
+                const updateData = { agendou: novoStatus };
+                if (novoStatus === 'sim' && !leads[leadIndex].compareceu) updateData.compareceu = 'Pendente';
+                await db.collection('leads').doc(leadId).update(updateData);
+                leads[leadIndex].agendou = novoStatus;
+                if (updateData.compareceu) leads[leadIndex].compareceu = updateData.compareceu;
+                aplicarFiltrosLeads();
+                renderizarAgendaSemanal();
+            } catch (error) { console.error("Erro ao atualizar status do lead:", error); alert("Falha ao atualizar o status."); }
+        }
+    };
+    const renderizarAgendaSemanal = () => {
+        const container = document.getElementById('agenda-semanal-container');
+        const selectedDate = new Date(document.getElementById('semana-filtro').value + 'T12:00:00');
+        const getMonday = d => { const date = new Date(d), day = date.getDay(), diff = date.getDate() - day + (day === 0 ? -6 : 1); return new Date(date.setDate(diff)); };
+        const monday = getMonday(selectedDate);
+        container.innerHTML = '';
+        const diasDaSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'], origens = ['Google Ads', 'Instagram', 'Indicação', 'Outros'], status = ['aberto', 'ativado', 'sim', 'nao'], statusLabels = { 'aberto': 'Aberto', 'ativado': 'Ativado', 'sim': 'Agendado', 'nao': 'Não Agendou' };
+        for (let i = 0; i < 6; i++) {
+            const currentDate = new Date(monday);
+            currentDate.setDate(monday.getDate() + i);
+            const dateString = formatarDataInput(currentDate), leadsDoDia = leads.filter(l => l.data === dateString);
+            const contagemOrigem = origens.reduce((acc, origem) => { acc[origem] = leadsDoDia.filter(l => l.origem === origem).length; return acc; }, {});
+            const contagemStatus = status.reduce((acc, s) => { acc[s] = leadsDoDia.filter(l => l.agendou === s).length; return acc; }, {});
+            let origemHtml = origens.map(o => `<div class="flex justify-between text-xs"><span class="text-texto-secundario">${o}:</span><span class="font-bold">${contagemOrigem[o]}</span></div>`).join('');
+            let statusHtml = status.map(s => `<div class="flex justify-between text-xs"><span class="text-texto-secundario">${statusLabels[s]}:</span><span class="font-bold">${contagemStatus[s]}</span></div>`).join('');
+            container.innerHTML += `<div class="bg-gray-50 rounded-lg p-3 space-y-2 border"><div class="text-center pb-2 border-b"><p class="font-bold text-texto-principal">${diasDaSemana[i]}</p><p class="text-sm text-texto-secundario">${currentDate.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})}</p></div><div><p class="text-lg font-bold text-center text-dourado">${leadsDoDia.length}</p><p class="text-xs text-center text-texto-secundario -mt-1">Leads Totais</p></div><div class="space-y-1 pt-2"><h4 class="text-sm font-semibold text-texto-principal text-center mb-1">Origem</h4>${origemHtml}</div><div class="space-y-1 pt-2"><h4 class="text-sm font-semibold text-texto-principal text-center mb-1">Status</h4>${statusHtml}</div></div>`;
+        }
+    };
+    const renderizarAgendamentos = () => {
+        const tableBody = document.getElementById('agendamentosTableBody');
+        const agendados = leads.filter(l => l.agendou === 'sim').sort((a, b) => new Date(b.dataAgendamento || b.data) - new Date(a.dataAgendamento || a.data));
+        const paginatedAgendamentos = agendados.slice((agendamentosCurrentPage - 1) * ITEMS_PER_PAGE, agendamentosCurrentPage * ITEMS_PER_PAGE);
+        tableBody.innerHTML = paginatedAgendamentos.map(lead => `<tr><td class="p-3 font-medium">${lead.nome}</td><td class="p-2"><input type="date" value="${lead.dataAgendamento || ''}" onchange="atualizarDetalheAgendamento('${lead.id}', 'dataAgendamento', this.value)" class="table-input"></td><td class="p-2"><select onchange="atualizarDetalheAgendamento('${lead.id}', 'medico', this.value)" class="table-input"><option value="">Selecione</option>${medicos.map(m => `<option value="${m.nome}" ${lead.medico === m.nome ? 'selected' : ''}>${m.nome}</option>`).join('')}</select></td><td class="p-2"><select onchange="atualizarDetalheAgendamento('${lead.id}', 'unidade', this.value)" class="table-input"><option value="">Selecione</option><option value="Tatuapé" ${lead.unidade === 'Tatuapé' ? 'selected' : ''}>Tatuapé</option><option value="Santana" ${lead.unidade === 'Santana' ? 'selected' : ''}>Santana</option></select></td><td class="p-2"><select onchange="atualizarDetalheAgendamento('${lead.id}', 'compareceu', this.value)" class="table-input"><option value="Pendente" ${lead.compareceu === 'Pendente' ? 'selected' : ''}>Pendente</option><option value="Sim" ${lead.compareceu === 'Sim' ? 'selected' : ''}>Sim</option><option value="Não" ${lead.compareceu === 'Não' ? 'selected' : ''}>Não</option><option value="Remarcou" ${lead.compareceu === 'Remarcou' ? 'selected' : ''}>Remarcou</option></select></td><td class="p-2"><select onchange="atualizarDetalheAgendamento('${lead.id}', 'protocolo', this.value)" class="table-input"><option value="false" ${!lead.protocolo ? 'selected' : ''}>Não</option><option value="true" ${lead.protocolo ? 'selected' : ''}>Sim</option></select></td></tr>`).join('');
+        if(paginatedAgendamentos.length === 0) tableBody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-texto-secundario">Nenhum agendamento encontrado.</td></tr>`;
+        renderizarPaginacao('agendamentosPaginacao', agendamentosCurrentPage, agendados.length, 'changeAgendamentosPage');
+    };
+    const atualizarDetalheAgendamento = async (leadId, campo, valor) => {
+        const leadIndex = leads.findIndex(l => l.id === leadId);
+        if (leadIndex > -1) {
+            try {
+                const valorFinal = (campo === 'protocolo') ? (valor === 'true') : valor;
+                await db.collection('leads').doc(leadId).update({ [campo]: valorFinal });
+                leads[leadIndex][campo] = valorFinal;
+            } catch (error) { console.error("Erro ao atualizar agendamento:", error); alert("Falha ao salvar a alteração."); renderizarAgendamentos(); }
+        }
+    };
+    const renderizarDashboardCompleto = (leadsPeriodoAtual, leadsPeriodoAnterior) => {
+        const createSafeId = (name) => name ? name.replace(/[^a-zA-Z0-9]/g, '') : '';
+        const setVal = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+        const origens = ['Google Ads', 'Instagram', 'Indicação', 'Outros'], unidades = ['Tatuapé', 'Santana'];
+        const stats = { weekly: { total: {1:0,2:0,3:0,4:0,5:0} } };
+        origens.forEach(o => { stats.weekly[createSafeId(o).toLowerCase()] = {1:0,2:0,3:0,4:0,5:0}; });
+        setVal('totalMes', leadsPeriodoAtual.length);
+        origens.forEach(o => setVal(`total${createSafeId(o)}`, leadsPeriodoAtual.filter(l => l.origem === o).length));
+        leadsPeriodoAtual.forEach(lead => {
+            const semana = getWeekOfMonth(lead.data);
+            if (semana > 0 && semana <= 5) {
+                stats.weekly.total[semana]++;
+                const origemId = createSafeId(lead.origem).toLowerCase();
+                if (stats.weekly[origemId]) stats.weekly[origemId][semana]++;
+            }
+        });
+        for (let s = 1; s <= 5; s++) {
+            setVal(`totalSem${s}`, stats.weekly.total[s]);
+            origens.forEach(o => setVal(`${createSafeId(o).toLowerCase()}Sem${s}`, stats.weekly[createSafeId(o).toLowerCase()][s]));
+        }
+        document.getElementById('originSummaryBody').innerHTML = origens.map(o => { const ldo = leadsPeriodoAtual.filter(l => l.origem === o), total = ldo.length, agend = ldo.filter(l => l.agendou === 'sim').length; return `<tr><td class="px-4 py-2 text-sm font-medium">${o}</td><td class="px-4 py-2 text-center">${total}</td><td class="px-4 py-2 text-center">${leadsPeriodoAtual.length > 0 ? ((total / leadsPeriodoAtual.length) * 100).toFixed(1) + '%' : '0.0%'}</td><td class="px-4 py-2 text-center">${agend}</td><td class="px-4 py-2 text-center font-bold">${total > 0 ? ((agend / total) * 100).toFixed(1) + '%' : '0.0%'}</td></tr>`; }).join('');
+        const agendados = leadsPeriodoAtual.filter(l => l.agendou === 'sim');
+        document.getElementById('unitSummaryBody').innerHTML = unidades.map(u => { const agendUnidade = agendados.filter(l => l.unidade === u), totalAgend = agendUnidade.length, compareceram = agendUnidade.filter(l => l.compareceu === 'Sim').length, protocolos = agendUnidade.filter(l => l.protocolo).length; return `<tr><td class="px-4 py-2 text-sm font-medium">${u}</td><td class="px-4 py-2 text-center">${totalAgend}</td><td class="px-4 py-2 text-center">${compareceram}</td><td class="px-4 py-2 text-center font-bold">${totalAgend > 0 ? ((compareceram / totalAgend) * 100).toFixed(1) + '%' : '0.0%'}</td><td class="px-4 py-2 text-center">${protocolos}</td><td class="px-4 py-2 text-center font-bold">${compareceram > 0 ? ((protocolos / compareceram) * 100).toFixed(1) + '%' : '0.0%'}</td></tr>`; }).join('');
+        const calcVariacao = (a, c) => { if (a === 0) return { texto: c > 0 ? `+${c}`: '0.0%', classe: c > 0 ? 'text-positivo' : '' }; const v = ((c - a) / a) * 100; return { texto: (v > 0 ? '+' : '') + v.toFixed(1) + '%', classe: v >= 0 ? 'text-positivo' : 'text-negativo' }; };
+        const metricas = [{ n: 'Total de Leads', g: a => a.length }, ...origens.map(o => ({ n: `Leads (${o})`, g: a => a.filter(l => l.origem === o).length, s: 'pl-8 text-texto-secundario' })), { n: 'Total de Agendamentos', g: a => a.filter(l => l.agendou === 'sim').length }, { n: 'Total de Protocolos', g: a => a.filter(l => l.protocolo).length }];
+        document.getElementById('comparisonSummaryBody').innerHTML = metricas.map(m => { const va = m.g(leadsPeriodoAnterior), vc = m.g(leadsPeriodoAtual), v = calcVariacao(va, vc); return `<tr><td class="px-4 py-2 text-sm ${m.s || 'font-semibold'}">${m.n}</td><td class="px-4 py-2 text-center">${va}</td><td class="px-4 py-2 text-center">${vc}</td><td class="px-4 py-2 text-center font-bold ${v.classe}">${v.texto}</td></tr>`; }).join('');
+        const todosMedicos = [...new Set([...medicos.map(m => m.nome), ...leadsPeriodoAtual.map(l => l.medico), ...leadsPeriodoAnterior.map(l => l.medico)].filter(Boolean))];
+        document.getElementById('doctorComparisonBody').innerHTML = todosMedicos.map(medico => { const aa = leadsPeriodoAnterior.filter(l=>l.medico===medico&&l.agendou==='sim').length, pa = leadsPeriodoAnterior.filter(l=>l.medico===medico&&l.protocolo).length, ac = leadsPeriodoAtual.filter(l=>l.medico===medico&&l.agendou==='sim').length, pc = leadsPeriodoAtual.filter(l=>l.medico===medico&&l.protocolo).length; return `<tr><td class="px-4 py-2 text-sm font-medium">${medico}</td><td class="px-4 py-2 text-center">${aa}</td><td class="px-4 py-2 text-center">${pa}</td><td class="px-4 py-2 text-center">${ac}</td><td class="px-4 py-2 text-center">${pc}</td></tr>`; }).join('');
+    };
+    const atualizarDashboard = () => {
+        const fim = new Date(document.getElementById('dataFimDashboard').value + 'T23:59:59'), inicio = new Date(document.getElementById('dataInicioDashboard').value + 'T00:00:00');
+        const diff = fim - inicio, fimAnterior = new Date(inicio.getTime() - 1), inicioAnterior = new Date(fimAnterior.getTime() - diff);
+        document.getElementById('currentPeriodLabel').textContent = `${inicio.toLocaleDateString('pt-BR')} - ${fim.toLocaleDateString('pt-BR')}`;
+        document.getElementById('previousPeriodLabel').textContent = `${inicioAnterior.toLocaleDateString('pt-BR')} - ${fimAnterior.toLocaleDateString('pt-BR')}`;
+        const leadsAtual = leads.filter(l => new Date(l.data + 'T00:00:00') >= inicio && new Date(l.data + 'T00:00:00') <= fim);
+        const leadsAnterior = leads.filter(l => new Date(l.data + 'T00:00:00') >= inicioAnterior && new Date(l.data + 'T00:00:00') <= fimAnterior);
+        renderizarDashboardCompleto(leadsAtual, leadsAnterior);
+    };
+    const definirFiltroPadrao = () => {
+        const hoje = new Date(), inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1), fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+        document.getElementById('dataInicioDashboard').value = formatarDataInput(inicioMes);
+        document.getElementById('dataFimDashboard').value = formatarDataInput(fimMes);
+    };
+    const limparFiltrosDashboard = () => { definirFiltroPadrao(); atualizarDashboard(); };
+    const abrirModalNovoLead = () => { document.getElementById('leadForm').reset(); document.getElementById('data').valueAsDate = new Date(); toggleAgendamentoFields(); toggleModal('modalNovoLead', true); };
+    const fecharModalNovoLead = () => toggleModal('modalNovoLead', false);
+    const excluirLead = async (id) => {
+        if (confirm('Tem certeza que deseja excluir este lead? A ação não pode ser desfeita.')) {
+            try {
+                await db.collection('leads').doc(id).delete();
+                leads = leads.filter(l => l.id !== id);
+                const relatorioModal = document.getElementById('modalRelatorio');
+                if (relatorioModal && !relatorioModal.classList.contains('hidden')) {
+                    leadsRelatorio = leadsRelatorio.filter(l => l.id !== id);
+                    renderizarRelatorio(leadsRelatorio);
+                } else {
+                    const currentView = document.querySelector('.main-view:not(.hidden)');
+                    if (currentView) showView(currentView.id, document.querySelector(`.nav-link.active`));
+                }
+            } catch (error) { console.error("Erro ao excluir lead:", error); alert("Falha ao excluir o lead."); }
+        }
+    };
+    const toggleAgendamentoFields = () => {
+        const isSim = document.getElementById('agendou').value === 'sim';
+        document.getElementById('agendamentoFields').classList.toggle('hidden', !isSim);
+        ['dataAgendamento', 'unidade', 'medico'].forEach(id => document.getElementById(id).required = isSim);
+    };
+    const abrirModalMedicos = () => { renderizarMedicos(); toggleModal('modalMedicos', true); };
+    const fecharModalMedicos = () => toggleModal('modalMedicos', false);
+    const renderizarMedicos = () => { document.getElementById('listaMedicosBody').innerHTML = medicos.map(m => `<tr><td class="p-3">${m.nome}</td><td class="p-3 text-right"><button onclick="excluirMedico('${m.id}')" class="text-red-500 hover:text-red-700 font-medium">Excluir</button></td></tr>`).join(''); };
+    const excluirMedico = async (id) => {
+        try {
+            await db.collection('medicos').doc(id).delete();
+            medicos = medicos.filter(m => m.id !== id);
+            renderizarMedicos(); popularSelectMedicos();
+        } catch(error) { console.error("Erro ao excluir médico:", error); alert("Falha ao excluir médico."); }
+    };
+    const popularSelectMedicos = () => { document.getElementById('medico').innerHTML = `<option value="">Selecione</option>${medicos.map(m => `<option value="${m.nome}">${m.nome}</option>`).join('')}`; };
+    const abrirModalMensagens = () => { renderizarMensagens(); toggleModal('modalMensagens', true); };
+    const fecharModalMensagens = () => toggleModal('modalMensagens', false);
+    const renderizarMensagens = () => { document.getElementById('listaMensagensBody').innerHTML = mensagensPadrao.map(msg => `<tr><td class="p-3">${msg.texto}</td><td class="p-3 text-right"><button onclick="excluirMensagem('${msg.id}')" class="text-red-500 hover:text-red-700 font-medium">Excluir</button></td></tr>`).join(''); };
+    const excluirMensagem = async (id) => {
+        try {
+            await db.collection('mensagensPadrao').doc(id).delete();
+            mensagensPadrao = mensagensPadrao.filter(msg => msg.id !== id);
+            renderizarMensagens(); atualizarSelectMensagens();
+        } catch(error) { console.error("Erro ao excluir mensagem:", error); alert("Falha ao excluir mensagem."); }
+    };
+    const atualizarSelectMensagens = () => { document.getElementById('mensagem').innerHTML = `<option value="">Selecione</option>${mensagensPadrao.map(msg => `<option value="${msg.texto}">${msg.texto}</option>`).join('')}`; };
+    const abrirRelatorio = () => { limparFiltrosRelatorio(); toggleModal('modalRelatorio', true); };
+    const fecharRelatorio = () => toggleModal('modalRelatorio', false);
+    const renderizarRelatorio = (dados) => {
+        document.getElementById('totalLeadsRelatorio').textContent = dados.length;
+        const tableBody = document.getElementById('relatorioTableBody');
+        const paginatedData = dados.slice((relatorioCurrentPage - 1) * ITEMS_PER_PAGE, relatorioCurrentPage * ITEMS_PER_PAGE);
+        if (paginatedData.length === 0) { tableBody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-texto-secundario">Nenhum lead encontrado.</td></tr>`; }
+        else { tableBody.innerHTML = paginatedData.map(lead => `<tr><td class="p-3">${formatarData(lead.data)}</td><td class="p-3 font-medium">${lead.nome}</td><td class="p-3">${lead.telefone}</td><td class="p-3">${lead.unidade || '-'}</td><td class="p-3">${lead.medico || '-'}</td><td class="p-3">${lead.origem}</td><td class="p-3">${capitalizarNome(lead.agendou)}</td><td class="p-3">${formatarData(lead.dataAgendamento)}</td><td class="p-3 text-center no-print"><button onclick="excluirLead('${lead.id}')" class="text-red-500 hover:text-red-700 font-medium">Excluir</button></td></tr>`).join(''); }
+        renderizarPaginacao('relatorioPaginacao', relatorioCurrentPage, dados.length, 'changeRelatorioPage');
+    };
+    const filtrarRelatorio = () => {
+        relatorioCurrentPage = 1;
+        const filtros = { nome: document.getElementById('filtroNomeRelatorio').value.toLowerCase(), telefone: document.getElementById('filtroTelefoneRelatorio').value, dataInicial: document.getElementById('dataInicialRelatorio').value, dataFinal: document.getElementById('dataFinalRelatorio').value, unidade: document.getElementById('filtroUnidadeRelatorio').value, origem: document.getElementById('filtroOrigemRelatorio').value, agendou: document.getElementById('filtroAgendouRelatorio').value };
+        leadsRelatorio = leads.filter(l => (!filtros.nome || l.nome.toLowerCase().includes(filtros.nome)) && (!filtros.telefone || l.telefone.includes(filtros.telefone)) && (!filtros.dataInicial || l.data >= filtros.dataInicial) && (!filtros.dataFinal || l.data <= filtros.dataFinal) && (!filtros.unidade || l.unidade === filtros.unidade) && (!filtros.origem || l.origem === filtros.origem) && (!filtros.agendou || l.agendou === filtros.agendou));
+        renderizarRelatorio(leadsRelatorio);
+    };
+    const limparFiltrosRelatorio = () => {
+        relatorioCurrentPage = 1;
+        ['filtroNomeRelatorio', 'filtroTelefoneRelatorio', 'dataInicialRelatorio', 'dataFinalRelatorio', 'filtroUnidadeRelatorio', 'filtroOrigemRelatorio', 'filtroAgendouRelatorio'].forEach(id => document.getElementById(id).value = '');
+        leadsRelatorio = [...leads];
+        renderizarRelatorio(leadsRelatorio);
+    };
+    const imprimirRelatorio = () => {
+        const printContent = document.getElementById('printContent'), cabecalho = `<div class="print-header"><h1>Relatório de Leads</h1><p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p><p>Total: <b>${leadsRelatorio.length}</b></p></div>`;
+        const tabela = `<table class="print-table"><thead><tr><th>Data</th><th>Nome</th><th>Telefone</th><th>Origem</th><th>Status</th><th>Data Agend.</th><th>Médico</th><th>Unidade</th></tr></thead><tbody>${leadsRelatorio.map(l => `<tr><td>${formatarData(l.data)}</td><td>${l.nome}</td><td>${l.telefone}</td><td>${l.origem}</td><td>${capitalizarNome(l.agendou)}</td><td>${formatarData(l.dataAgendamento)}</td><td>${l.medico || '-'}</td><td>${l.unidade || '-'}</td></tr>`).join('')}</tbody></table>`;
+        printContent.innerHTML = cabecalho + tabela;
+        window.print();
+    };
+    const exportarExcel = () => {
+        const headers = ['Data', 'Nome', 'Telefone', 'Mensagem', 'Origem', 'Status', 'Data Agendamento', 'Unidade', 'Médico', 'Compareceu', 'Protocolo'];
+        const escapeCsvCell = (cell) => `"${(cell === null || cell === undefined ? '' : String(cell)).replace(/\r?\n/g, ' ').replace(/"/g, '""')}"`;
+        const rows = leadsRelatorio.map(l => [ formatarData(l.data), l.nome, l.telefone, l.mensagem||'', l.origem, capitalizarNome(l.agendou), formatarData(l.dataAgendamento), l.unidade||'', l.medico||'', l.compareceu||'', l.protocolo?'Sim':'Não' ].map(escapeCsvCell).join(';'));
+        const csv = "\uFEFF" + headers.join(';') + '\n' + rows.join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }), url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `relatorio_leads_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    };
+    const limparColecao = async (collectionName) => {
+        const snapshot = await db.collection(collectionName).get();
+        await Promise.all(snapshot.docs.map(doc => doc.ref.delete()));
+        console.log(`Coleção "${collectionName}" limpa.`);
+    };
+    const backupDadosJSON = async () => {
+        if (!confirm('Deseja criar um backup de todos os leads, médicos e mensagens?')) return;
+        try {
+            const backupData = {
+                leads: leads.map(({ id, ...lead }) => lead),
+                medicos: medicos.map(({ id, ...medico }) => medico),
+                mensagensPadrao: mensagensPadrao.map(({ id, ...msg }) => msg)
+            };
+            const jsonString = JSON.stringify(backupData, null, 2), blob = new Blob([jsonString], { type: 'application/json' }), url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `backup_clinica_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            alert('Backup gerado com sucesso!');
+        } catch (error) { console.error("Erro ao gerar o backup:", error); alert("Ocorreu um erro ao gerar o backup."); }
+    };
+    const restaurarDadosJSON = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const backupData = JSON.parse(e.target.result);
+                if (!backupData.leads || !backupData.medicos || !backupData.mensagensPadrao) throw new Error("Arquivo inválido.");
+                const msg = "CERTEZA?\n\nTODOS OS DADOS ATUAIS (leads, médicos, mensagens) SERÃO APAGADOS e substituídos pelo backup.\n\nEsta ação não pode ser desfeita.";
+                if (!confirm(msg)) { event.target.value = ''; return; }
+                alert('Iniciando restauração. Aguarde...');
+                await Promise.all([limparColecao('leads'), limparColecao('medicos'), limparColecao('mensagensPadrao')]);
+                await Promise.all([ ...backupData.leads.map(l => db.collection('leads').add(l)), ...backupData.medicos.map(m => db.collection('medicos').add(m)), ...backupData.mensagensPadrao.map(m => db.collection('mensagensPadrao').add(m)) ]);
+                alert('Restauração concluída! A página será recarregada.');
+                location.reload();
+            } catch (error) { console.error("Erro ao restaurar:", error); alert("Erro ao restaurar backup. Verifique o arquivo.");
+            } finally { event.target.value = ''; }
+        };
+        reader.readAsText(file);
+    };
+
+    const initApp = async () => {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const appContent = document.getElementById('app-content');
+        await carregarDadosIniciais();
+        loadingOverlay.style.display = 'none';
+        appContent.classList.remove('hidden');
+        document.getElementById('btnSalvarLead').addEventListener('click', adicionarLead);
+        document.getElementById('btnSalvarMedico').addEventListener('click', adicionarMedico);
+        document.getElementById('btnSalvarMensagem').addEventListener('click', adicionarMensagem);
+        popularSelectMedicos();
+        atualizarSelectMensagens();
+        definirFiltroPadrao();
+        showView('view-dashboard', document.querySelector('.nav-link'));
+    };
+    
+    // Expor funções para o HTML
+    window.showView = showView;
+    window.toggleSubmenu = toggleSubmenu;
+    window.abrirModalNovoLead = abrirModalNovoLead;
+    window.fecharModalNovoLead = fecharModalNovoLead;
+    window.abrirModalMedicos = abrirModalMedicos;
+    window.fecharModalMedicos = fecharModalMedicos;
+    window.excluirMedico = excluirMedico;
+    window.abrirModalMensagens = abrirModalMensagens;
+    window.fecharModalMensagens = fecharModalMensagens;
+    window.excluirMensagem = excluirMensagem;
+    window.abrirRelatorio = abrirRelatorio;
+    window.fecharRelatorio = fecharRelatorio;
+    window.filtrarRelatorio = filtrarRelatorio;
+    window.limparFiltrosRelatorio = limparFiltrosRelatorio;
+    window.imprimirRelatorio = imprimirRelatorio;
+    window.exportarExcel = exportarExcel;
+    window.atualizarDashboard = atualizarDashboard;
+    window.limparFiltrosDashboard = limparFiltrosDashboard;
+    window.renderizarAgendaSemanal = renderizarAgendaSemanal;
+    window.aplicarFiltrosLeads = aplicarFiltrosLeads;
+    window.limparFiltrosLeads = limparFiltrosLeads;
+    window.atualizarStatusLead = atualizarStatusLead;
+    window.excluirLead = excluirLead;
+    window.atualizarDetalheAgendamento = atualizarDetalheAgendamento;
+    window.toggleAgendamentoFields = toggleAgendamentoFields;
+    window.changeLeadsPage = changeLeadsPage;
+    window.changeAgendamentosPage = changeAgendamentosPage;
+    window.changeRelatorioPage = changeRelatorioPage;
+    window.backupDadosJSON = backupDadosJSON;
+    window.restaurarDadosJSON = restaurarDadosJSON;
+
+    document.addEventListener('DOMContentLoaded', initApp);
+
+})(window);
+</script>
+</body>
+</html>
